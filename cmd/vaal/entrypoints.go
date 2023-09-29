@@ -4,6 +4,27 @@ import (
 	"fmt"
 )
 
+func ListHosts(config Config) error {
+	for key, _ := range config.Hosts {
+		fmt.Println(key)
+	}
+
+	return nil
+}
+
+func Get(host ConfigHost, expr string) error {
+	rendered, err := EvalExpression(host, expr)
+	if err != nil {
+		return err
+	}
+
+	if *rendered != "<no value>" {
+		fmt.Println(*rendered)
+	}
+
+	return nil
+}
+
 func Show(host ConfigHost, paths []string) error {
 	for _, path := range paths {
 		rendered, err := ReadAndApplyTemplate(host, path)

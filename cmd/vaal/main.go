@@ -14,6 +14,8 @@ Usage:
   vaal [--host <host>] [--config <yaml>]... (show | copy) FILE... [--dry-run]
   vaal [--host <host>] [--config <yaml>]... (sync | shell) [--dry-run]
   vaal [--host <host>] [--config <yaml>]... run <command>... [--dry-run]
+  vaal [--host <host>] [--config <yaml>]... get <expr>
+  vaal [--config <yaml>]... list hosts
   vaal --help
 
 Options:
@@ -66,6 +68,10 @@ func main() {
 		err = Copy(*host, dryRun, arguments["FILE"].([]string))
 	} else if arguments["sync"] == true {
 		err = Sync(*host, dryRun)
+	} else if arguments["get"] == true {
+		err = Get(*host, arguments["<expr>"].(string))
+	} else if arguments["list"] == true && arguments["hosts"] == true {
+		err = ListHosts(*config)
 	}
 
 	if err != nil {

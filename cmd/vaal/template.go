@@ -39,19 +39,22 @@ func readTemplate(config ConfigHost, path string) (*string, error) {
 		bundle = []string{path}
 	}
 
-	contents := header
+	contents := "" // header
 	for _, path := range bundle {
 		text, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
 
-		relpath, err := relativePath(*config.Source, path)
-		if err != nil {
-			return nil, err
-		}
+		/*
+			relpath, err := relativePath(*config.Source, path)
+			if err != nil {
+				return nil, err
+			}
 
-		contents += separator(relpath) + string(text)
+			contents += separator(relpath) + string(text)
+		*/
+		contents += "\n" + string(text)
 	}
 
 	return &contents, nil
@@ -79,13 +82,17 @@ func applyTemplate(config ConfigHost, name string, tplt string) (*string, error)
 	return &result, nil
 }
 
-func ReadAndApplyTemplate(config ConfigHost, templateFile string) (*string, error) {
-	templateText, err := readTemplate(config, templateFile)
+func EvalExpression(config ConfigHost, expr string) (*string, error) {
+	return applyTemplate(config, expr, "{{ "+expr+" }}")
+}
+
+func ReadAndApplyTemplate(config ConfigHost, templatePath string) (*string, error) {
+	templateText, err := readTemplate(config, templatePath)
 	if err != nil {
 		return nil, err
 	}
 
-	rendered, err := applyTemplate(config, templateFile, *templateText)
+	rendered, err := applyTemplate(config, templatePath, *templateText)
 	if err != nil {
 		return nil, err
 	}
