@@ -1,0 +1,32 @@
+
+config interface 'loopback'
+	option device 'lo'
+	option proto 'static'
+	option ipaddr '127.0.0.1'
+	option netmask '255.0.0.0'
+
+# Create a VLAN device
+config device
+	option name 'vlan-wan'
+	option type '8021q'
+	option ifname 'eth0'
+	option vid '7'
+	option ipv6 '0'
+
+# Connect to PPPoE using VLAN device
+config interface 'wan'
+	option device 'vlan-wan'
+	option proto 'pppoe'
+	option username '{{ .params.pppoe.username }}'
+	option password '{{ .params.pppoe.password }}'
+
+config device
+	option name 'eth1'
+	option ipv6 '0'
+
+config interface 'lan'
+	option device 'eth0'
+	option proto 'static'
+	list ipaddr '{{ .server.addr }}/24'
+	option ip6assign '60'
+	option ip6hint '20'
