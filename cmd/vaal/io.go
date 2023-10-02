@@ -38,21 +38,38 @@ func CreateTempFile(host ConfigHost, tempdir string, path string, content string
 	}
 
 	abspath := filepath.Join(tempdir, relpath)
-
 	os.MkdirAll(filepath.Dir(abspath), os.ModePerm)
 
-	tempFile, err := os.Create(abspath)
+	fromfile, err := os.Stat(filepath.Join(*host.Source, relpath))
 	if err != nil {
 		return "", "", err
 	}
-	defer tempFile.Close()
 
-	_, err = tempFile.WriteString(content)
+	err = os.WriteFile(abspath, []byte(content), fromfile.Mode())
 	if err != nil {
 		return "", "", err
 	}
 
 	return abspath, relpath, nil
+}
+
+func CopyFile(frompath string, topath string) error {
+	file, err := os.Stat(frompath)
+	if err != nil {
+		return nil
+	}
+
+	content, err := os.ReadFile(frompath)
+	if err != nil {
+		return nil
+	}
+
+	err = os.MkdirAll(filepath.Dir(topath), os.ModePerm)
+	if err != nil {
+		return nil
+	}
+
+	return os.WriteFile(topath, content, file.Mode())
 }
 
 func ListAllValidFiles(host ConfigHost) ([]string, error) {

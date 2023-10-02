@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 )
 
 func ListHosts(config Config) error {
@@ -46,7 +47,7 @@ func Run(host ConfigHost, dryRun bool, command []string) error {
 	return SecureShell(host, dryRun, command...)
 }
 
-func Copy(host ConfigHost, dryRun bool, paths []string) error {
+func Copy(host ConfigHost, dryRun bool, paths []string, toDir *string) error {
 	return WithTempDir(dryRun, func(tempdir string) error {
 		for _, path := range paths {
 			rendered, err := ReadAndApplyTemplate(host, path)
@@ -55,17 +56,22 @@ func Copy(host ConfigHost, dryRun bool, paths []string) error {
 			}
 
 			absPath, relPath, err := CreateTempFile(host, tempdir, path, *rendered)
-			SecureCopyToRemote(host, dryRun, absPath, relPath)
+
+			if toDir != nil {
+				CopyFile(absPath, filepath.Join(*toDir, relPath))
+			} else {
+				SecureCopyToRemote(host, dryRun, absPath, relPath)
+			}
 		}
 		return nil
 	})
 }
 
-func Sync(host ConfigHost, dryRun bool) error {
+func Sync(host ConfigHost, dryRun bool, toDir *string) error {
 	paths, err := ListAllValidFiles(host)
 	if err != nil {
 		return err
 	}
 
-	return Copy(host, dryRun, paths)
+	return Copy(host, dryRun, paths, toDir)
 }

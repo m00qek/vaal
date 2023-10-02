@@ -20,6 +20,7 @@ func execute(command string, args []string) error {
 	return cmd.Run()
 }
 
+// TODO: Maybe (maybe!) do this in go instead off calling ssh
 func SecureShell(host ConfigHost, dryRun bool, arguments ...string) error {
 	args := append([]string{remoteAddr(host)}, arguments...)
 

@@ -8,36 +8,39 @@ import (
 
 const (
 	usage = `
-Prints a shortened version of a directory absolute path.
+Manage config files of OpenWRT hosts.
 
 Usage:
-  vaal [--host <host>] [--config <yaml>]... (show | copy) FILE... [--dry-run]
-  vaal [--host <host>] [--config <yaml>]... (sync | shell) [--dry-run]
+  vaal [--host <host>] [--config <yaml>]... copy FILE... [--to-directory=<dir>] [--dry-run]
+  vaal [--host <host>] [--config <yaml>]... sync [--to-directory=<dir>] [--dry-run]
+  vaal [--host <host>] [--config <yaml>]... show FILE... [--dry-run]
+  vaal [--host <host>] [--config <yaml>]... shell [--dry-run]
   vaal [--host <host>] [--config <yaml>]... run <command>... [--dry-run]
   vaal [--host <host>] [--config <yaml>]... get <expr>
   vaal [--config <yaml>]... list hosts
   vaal --help
 
 Options:
-  -d --dry-run        Host name.
-  -c --config=<yaml>  Host name.
-  -H --host=<host>    Host name.
-  -h --help           Show this message.
+  -d --dry-run             Do not change the host, only print actions.
+  -t --to-directory=<dir>  Put files in <dir> instead of the the host.
+  -c --config=<yaml>       YAML config file.
+  -H --host=<host>         Host name.
+  -h --help                Show this message.
 `
 )
 
-func pickHost(config Config, hostname interface{}) (*ConfigHost, error) {
-	if hostname == nil {
-		if config.DefaultHost == nil {
-			return nil, errors.New("There's no default-host configured and none were passed as an argument.")
-		}
-
-		hostname = *config.DefaultHost
+func pickHost(config Config, hostname *string) (*ConfigHost, error) {
+	if hostname == nil && config.DefaultHost == nil {
+		return nil, errors.New("There's no default-host configured and none were passed as an argument.")
 	}
 
-	host := config.Hosts[hostname.(string)]
+	if hostname == nil {
+		hostname = config.DefaultHost
+	}
+
+	host := config.Hosts[*hostname]
 	if host == nil {
-		return nil, errors.New("Could not find the config entry for host '" + hostname.(string) + "'.")
+		return nil, errors.New("Could not find the config entry for host '" + *hostname + "'.")
 	}
 
 	return host, nil
@@ -45,18 +48,30 @@ func pickHost(config Config, hostname interface{}) (*ConfigHost, error) {
 
 func main() {
 	arguments, _ := docopt.ParseDoc(usage)
-
 	config, err := LoadConfig(arguments["--config"].([]string))
 	if err != nil {
 		panic(err)
 	}
 
-	host, err := pickHost(*config, arguments["--host"])
+	var hostname *string
+	if v, err := arguments.String("--host"); err == nil {
+		hostname = &v
+	}
+
+	var dryRun bool
+	if v, err := arguments.Bool("--dry-run"); err == nil {
+		dryRun = v
+	}
+
+	var toDir *string
+	if v, err := arguments.String("--to-directory"); err == nil {
+		toDir = &v
+	}
+
+	host, err := pickHost(*config, hostname)
 	if err != nil {
 		panic(err)
 	}
-
-	dryRun, _ := arguments.Bool("--dry-run")
 
 	if arguments["run"] == true {
 		err = Run(*host, dryRun, arguments["<command>"].([]string))
@@ -65,9 +80,9 @@ func main() {
 	} else if arguments["show"] == true {
 		err = Show(*host, arguments["FILE"].([]string))
 	} else if arguments["copy"] == true {
-		err = Copy(*host, dryRun, arguments["FILE"].([]string))
+		err = Copy(*host, dryRun, arguments["FILE"].([]string), toDir)
 	} else if arguments["sync"] == true {
-		err = Sync(*host, dryRun)
+		err = Sync(*host, dryRun, toDir)
 	} else if arguments["get"] == true {
 		err = Get(*host, arguments["<expr>"].(string))
 	} else if arguments["list"] == true && arguments["hosts"] == true {

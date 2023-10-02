@@ -7,16 +7,6 @@ import (
 	"text/template"
 )
 
-const header = `
-###############################################################################
-##          File generated automatically, please do *not* edit it.           ##
-###############################################################################
-`
-
-func separator(path string) string {
-	return "\n## Source: " + path + "\n"
-}
-
 func readTemplate(config ConfigHost, path string) (*string, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
@@ -46,15 +36,7 @@ func readTemplate(config ConfigHost, path string) (*string, error) {
 			return nil, err
 		}
 
-		/*
-			relpath, err := relativePath(*config.Source, path)
-			if err != nil {
-				return nil, err
-			}
-
-			contents += separator(relpath) + string(text)
-		*/
-		contents += "\n" + string(text)
+		contents += string(text) + "\n"
 	}
 
 	return &contents, nil
